@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat System - Confia Paraná</title>
+  <title>Canal de comunicação - Confia Paraná</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome for Icons -->
@@ -50,17 +50,18 @@
       <span class="role-label ms-3">Usuário Atual: <span id="currentRole">AUDITOR</span></span>
     </div>
 
-    <!-- Main Header -->
-    <div class="header d-flex justify-content-between align-items-center">
-      <h1>Consulta de Empresas - Confia Paraná</h1>
-      <div>
-        <button id="inboxBtn" class="btn btn-info inbox-button" onclick="toggleInboxView()">
-          <i class="fas fa-envelope inbox-icon" id="inboxIcon"></i> Caixa de Entrada
-          <span id="inboxCount" class="inbox-count" style="display: none;">0</span>
-        </button>
-      </div>
-    </div>
-
+	<div id="inboxContainer">
+		<!-- Main Header -->
+		<div class="header d-flex justify-content-between align-items-center">
+		  <h1>Consulta de Empresas - Confia Paraná</h1>
+		  <div>
+			<button id="inboxBtn" class="btn btn-info inbox-button" onclick="toggleInboxView()">
+			  <i class="fas fa-envelope inbox-icon" id="inboxIcon"></i> Caixa de Entrada
+			  <span id="inboxCount" class="inbox-count" style="display: none;">0</span>
+			</button>
+		  </div>
+		</div>
+	</div>
     <!-- Communications Panel (Auditor Only, Initially Hidden) -->
     <div id="communicationsPanel" style="display: none;">
       <h3>Painel de Comunicações</h3>
@@ -96,43 +97,45 @@
       </div>
       <button class="btn btn-secondary btn-sm mt-2" onclick="toggleCommunicationsPanel()">Fechar Painel</button>
     </div>
+	<div id="consultaEmpresasContainer">
+		<!-- Main Filters -->
+		<div class="filters mt-3 d-flex flex-wrap gap-3">
+		  <div>
+			<label for="statusFilter" class="form-label">Filtrar por Status Última Comunicação:</label>
+			<select id="statusFilter" class="form-select">
+			  <option value="">Todos</option>
+			  <option value="Em análise">Em análise</option>
+			  <option value="Resolvida">Resolvida</option>
+			  <option value="Encerrada">Encerrada</option>
+			  <option value="Sem comunicação">Sem comunicação</option>
+			</select>
+		  </div>
+		  <div>
+			<label for="cnpjFilter" class="form-label">CNPJ:</label>
+			<input type="text" id="cnpjFilter" class="form-control" placeholder="Digite o CNPJ">
+		  </div>
+		  <div class="align-self-end">
+			<button class="btn btn-info" onclick="applyFilters()">Filtrar Empresas</button>
+		  </div>
+		</div>
+	
 
-    <!-- Main Filters -->
-    <div class="filters mt-3 d-flex flex-wrap gap-3">
-      <div>
-        <label for="statusFilter" class="form-label">Filtrar por Status Última Comunicação:</label>
-        <select id="statusFilter" class="form-select">
-          <option value="">Todos</option>
-          <option value="Em análise">Em análise</option>
-          <option value="Resolvida">Resolvida</option>
-          <option value="Encerrada">Encerrada</option>
-          <option value="Sem comunicação">Sem comunicação</option>
-        </select>
-      </div>
-      <div>
-        <label for="cnpjFilter" class="form-label">CNPJ:</label>
-        <input type="text" id="cnpjFilter" class="form-control" placeholder="Digite o CNPJ">
-      </div>
-      <div class="align-self-end">
-        <button class="btn btn-info" onclick="applyFilters()">Filtrar Empresas</button>
-      </div>
-    </div>
-
-    <!-- Company List -->
-    <div class="company-table mt-3">
-      <table class="table table-striped">
-        <thead>
-          <tr>
-            <th>CNPJ</th>
-            <th>Razão Social</th>
-            <th>Classificação</th>
-            <th>Divulgar</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="companyList"></tbody>
-      </table>
-    </div>
+		<!-- Company List -->
+		<div class="company-table mt-3">
+		  <table class="table table-striped">
+			<thead>
+			  <tr>
+				<th>CNPJ</th>
+				<th>Razão Social</th>
+				<th>Classificação</th>
+				<th>Divulgar</th>
+				<th>Ações</th>
+			  </tr>
+			</thead>
+			<tbody id="companyList"></tbody>
+		  </table>
+		</div>
+	</div>
 
     <!-- Chat Box -->
     <div class="chat-box" id="chatBox">
@@ -466,16 +469,29 @@
 
     // --- Communications Panel (Auditor Only) ---
     function toggleCommunicationsPanel() {
-      if (currentRole !== 'AUDITOR') return;
-      const panel = document.getElementById("communicationsPanel");
-      if (panel.style.display === "none") {
-        populateCommunicationsPanel();
-        panel.style.display = "block";
-        document.getElementById("chatBox").style.display = "none";
-      } else {
-        panel.style.display = "none";
-      }
-    }
+  if (currentRole !== 'AUDITOR') return;
+  const panel = document.getElementById("communicationsPanel");
+  const consultaContainer = document.getElementById("consultaEmpresasContainer");
+  const inboxContainer = document.getElementById("inboxContainer");
+  const panelButton = document.getElementById("communicationsPanelBtn");
+  if (panel.style.display === "none") {
+    populateCommunicationsPanel();
+    panel.style.display = "block";
+    if (consultaContainer) consultaContainer.style.display = "none";
+    if (inboxContainer) inboxContainer.style.display = "none";
+    document.getElementById("chatBox").style.display = "none";
+    // Altera o texto e a cor do botão para azul (btn-primary)
+    panelButton.textContent = "Voltar para relação de empresas";
+    panelButton.className = "btn btn-primary";
+  } else {
+    panel.style.display = "none";
+    if (consultaContainer) consultaContainer.style.display = "block";
+    if (inboxContainer) inboxContainer.style.display = "block";
+    // Restaura o texto original e a classe original (btn-secondary)
+    panelButton.textContent = "Painel de Comunicações";
+    panelButton.className = "btn btn-secondary";
+  }
+}
 
     function populateCommunicationsPanel() {
       if (currentRole !== 'AUDITOR') return;
