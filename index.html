@@ -10,7 +10,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 20px; position: relative; /* Needed for positioned notification */ }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
         .top-header { display: flex; justify-content: flex-end; padding: 10px 0; border-bottom: 1px solid #dee2e6; margin-bottom: 15px; }
         .header { background-color: #007bff; color: white; padding: 15px; border-radius: 5px 5px 0 0; margin-top: 0; }
         .company-table, .communications-panel-table { background-color: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
@@ -31,25 +31,9 @@
         .rating-radios .form-check { display: inline-block; margin-right: 10px; }
         #communicationsPanel { margin-top: 20px; border: 1px solid #ccc; padding: 15px; background-color: #f0f0f0; border-radius: 5px; }
         .panel-filters { margin-bottom: 15px; }
-
-        /* Notification Style */
-        #notificationPopup {
-            position: fixed; /* Sticks relative to the viewport */
-            top: 20px;
-            right: 20px;
-            z-index: 1050; /* High z-index to be on top */
-            min-width: 300px; /* Adjust as needed */
-            display: none; /* Initially hidden */
-        }
     </style>
 </head>
 <body>
-    <!-- Notification Popup Area -->
-    <div id="notificationPopup" class="alert alert-warning alert-dismissible fade" role="alert">
-        <span id="notificationPopupText"></span>
-        <button type="button" class="btn-close" aria-label="Close" onclick="hideNotification()"></button>
-    </div>
-
     <div class="container">
         <!-- Top Header for Panel Button (Auditor Only) -->
         <div class="top-header" id="panelButtonContainer" style="display: none;"> <!-- Initially hidden -->
@@ -61,7 +45,7 @@
              <div class="btn-group" role="group">
                  <button type="button" class="btn btn-warning" onclick="switchRole('AUDITOR')">Testar como AUDITOR</button>
                  <button type="button" class="btn btn-warning" onclick="switchRole('CASA LIMPA')">CASA LIMPA</button>
-                 <button type="button" class="btn btn-warning" onclick="switchRole('ABS LOG')">ABS LOG</button> <!-- Class A -->
+                 <button type="button" class="btn btn-warning" onclick="switchRole('ABS LOG')">ABS LOG</button>
                  <button type="button" class="btn btn-warning" onclick="switchRole('CAPIXABA')">CAPIXABA</button>
              </div>
              <span class="role-label ms-3">Usuário Atual: <span id="currentRole">AUDITOR</span></span>
@@ -81,7 +65,7 @@
         <!-- Communications Panel (Auditor Only, Initially Hidden) -->
         <div id="communicationsPanel" style="display: none;">
              <h3>Painel de Comunicações</h3>
-             {/* Panel Filters and Table HTML remains the same */}
+             <!-- Panel Filters -->
              <div class="panel-filters row g-3">
                  <div class="col-md-5">
                      <label for="panelCnpjFilter" class="form-label">Filtrar por CNPJ:</label>
@@ -95,9 +79,19 @@
                      <button class="btn btn-primary btn-sm w-100" onclick="populateCommunicationsPanel()">Filtrar Painel</button>
                  </div>
              </div>
+             <!-- Panel Table -->
              <div class="communications-panel-table">
                  <table class="table table-sm table-striped">
-                     <thead><tr><th>ID</th><th>CNPJ</th><th>Empresa</th><th>Assunto</th><th>Status</th><th>Ações</th></tr></thead>
+                     <thead>
+                         <tr>
+                             <th>ID</th>
+                             <th>CNPJ</th>
+                             <th>Empresa</th>
+                             <th>Assunto</th>
+                             <th>Status</th>
+                             <th>Ações</th>
+                         </tr>
+                     </thead>
                      <tbody id="communicationsPanelList"></tbody>
                  </table>
              </div>
@@ -106,7 +100,6 @@
 
         <!-- Main Filters -->
         <div class="filters mt-3 d-flex flex-wrap gap-3">
-             {/* Filters HTML remains the same */}
             <div>
                 <label for="statusFilter" class="form-label">Filtrar por Status Última Comunicação:</label>
                 <select id="statusFilter" class="form-select">
@@ -124,14 +117,15 @@
         <!-- Company List -->
         <div class="company-table mt-3">
             <table class="table table-striped">
-                <thead><tr><th>CNPJ</th><th>Razão Social</th><th>Classificação</th><th>Divulgar</th><th>Ações</th></tr></thead>
+                <thead>
+                    <tr><th>CNPJ</th><th>Razão Social</th><th>Classificação</th><th>Divulgar</th><th>Ações</th></tr>
+                </thead>
                 <tbody id="companyList"></tbody>
             </table>
         </div>
 
         <!-- Chat Box -->
         <div class="chat-box" id="chatBox">
-             {/* Chat Box HTML remains largely the same */}
              <h3>Comunicação <span id="chatCommId" class="badge bg-secondary"></span> com <span id="companyName"></span> (CNPJ: <span id="companyCNPJ"></span>)</h3>
             <div class="row mb-3">
                 <div class="col-md-4"><label for="subject" class="form-label">Assunto:</label><select id="subject" class="form-select"><option value="Confia Paraná">Confia Paraná</option><option value="Consulta Fiscal">Consulta Fiscal</option><option value="Atualização de Dados">Atualização de Dados</option><option value="Outros">Outros</option></select></div>
@@ -144,11 +138,51 @@
                 <button class="btn btn-primary" onclick="sendMessage()" id="sendMessageBtn">Enviar Mensagem</button>
                 <button class="btn btn-danger" onclick="closeChat()" id="closeChatBtn" style="display: none;">Fechar Comunicação</button>
             </div>
-             {/* Evaluation Sections HTML remain the same */}
-            <div id="surveyAuditor" style="display: none;" class="survey-card">...</div>
-            <div id="surveyCompany" style="display: none;" class="survey-card">...</div>
-            <div id="companyEvaluationDisplay" style="display: none;" class="survey-card mt-3">...</div>
-
+            <!-- Auditor Evaluation -->
+            <div id="surveyAuditor" style="display: none;" class="survey-card">
+                <h4>Resultado do contato</h4>
+                <div class="mb-3" id="surveyQuestionsAuditor">
+                    <label class="form-label">Comunicação com:</label><select id="communicationWithAuditor" class="form-select"><option value="">Selecione...</option><option value="CONTADOR">CONTADOR</option><option value="SÓCIO">SÓCIO</option></select>
+                    <label class="form-label mt-3">Vantagens Programa:</label><select id="programAdvantagesAuditor" class="form-select"><option value="">Selecione...</option><option value="SIM">SIM</option><option value="NÃO">NÃO</option></select>
+                    <label class="form-label mt-3">Regularização Pendências:</label><select id="pendingResolutionAuditor" class="form-select"><option value="">Selecione...</option><option value="de 1 a 30 dias">de 1 a 30 dias</option><option value="de 30 a 90 dias">de 30 a 90 dias</option><option value="acima de 90 dias">acima de 90 dias</option><option value="não há pendências">não há pendências</option></select>
+                    <label class="form-label mt-3">Nota da comunicação:</label>
+                    <div class="rating-radios" id="ratingAuditor">
+                         <div class="form-check"><input class="form-check-input" type="radio" name="auditorRating" id="auditorRating1" value="1"><label class="form-check-label" for="auditorRating1">1</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="auditorRating" id="auditorRating2" value="2"><label class="form-check-label" for="auditorRating2">2</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="auditorRating" id="auditorRating3" value="3"><label class="form-check-label" for="auditorRating3">3</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="auditorRating" id="auditorRating4" value="4"><label class="form-check-label" for="auditorRating4">4</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="auditorRating" id="auditorRating5" value="5"><label class="form-check-label" for="auditorRating5">5</label></div>
+                    </div>
+                </div>
+                 <button class="btn btn-success mt-2" onclick="submitSurvey()">Enviar Resultado</button>
+            </div>
+            <!-- Company Evaluation -->
+            <div id="surveyCompany" style="display: none;" class="survey-card">
+                <h4>Avaliação de Satisfação</h4>
+                <p>A comunicação foi encerrada. Por favor, avalie.</p>
+                 <div class="mb-3">
+                    <label class="form-label">Nota:</label>
+                    <div class="rating-radios" id="ratingCompany">
+                         <div class="form-check"><input class="form-check-input" type="radio" name="companyRating" id="companyRating1" value="1"><label class="form-check-label" for="companyRating1">1</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="companyRating" id="companyRating2" value="2"><label class="form-check-label" for="companyRating2">2</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="companyRating" id="companyRating3" value="3"><label class="form-check-label" for="companyRating3">3</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="companyRating" id="companyRating4" value="4"><label class="form-check-label" for="companyRating4">4</label></div>
+                         <div class="form-check"><input class="form-check-input" type="radio" name="companyRating" id="companyRating5" value="5"><label class="form-check-label" for="companyRating5">5</label></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                     <label for="companyFeedbackText" class="form-label">Avaliação Descritiva (Opcional):</label>
+                     <textarea id="companyFeedbackText" class="form-control" rows="3"></textarea>
+                </div>
+                 <button class="btn btn-success mt-2" onclick="submitSurvey()">Enviar Avaliação</button>
+            </div>
+             <!-- Display Company Evaluation for Auditor -->
+             <div id="companyEvaluationDisplay" style="display: none;" class="survey-card mt-3">
+                <h5>Avaliação Recebida da Empresa</h5>
+                <p id="companyRatingText"></p>
+                 <p><strong>Comentário:</strong></p>
+                 <p id="companyFeedbackDisplayText" style="white-space: pre-wrap;"></p>
+             </div>
         </div>
     </div>
 
@@ -159,72 +193,110 @@
         // Mock data
         const companies = [
             { cnpj: "00.063.375", name: "CASA LIMPA INDUSTRIA E COMERCIO DE PRODUTOS DE LIMPEZA LTDA - ME", classification: "D", role: "CASA LIMPA" },
-            { cnpj: "00.092.446", name: "ABS LOG TRANSPORTES E ORGANIZACAO LOGISTICA LTDA", classification: "A", role: "ABS LOG" }, // Class A
+            { cnpj: "00.092.446", name: "ABS LOG TRANSPORTES E ORGANIZACAO LOGISTICA LTDA", classification: "A", role: "ABS LOG" },
             { cnpj: "00.116.275", name: "CAPIXABA COMERCIO DE MATERIAIS DE CONSTRUCAO LTDA", classification: "D", role: "CAPIXABA" }
         ];
-        let communications = [];
-        let evaluations = {};
-        let communicationIdCounter = 0;
+        let communications = []; // Array to hold all communication threads
+        let evaluations = {}; // Keyed by CNPJ for simplicity { cnpj: { latestAuditorRating: ..., latestCompanyRating: ... } } - Consider ID-based for real app
+        let communicationIdCounter = 0; // Simple ID generator
 
         // Current state
         let currentRole = "AUDITOR";
-        let currentCompany = null;
-        let currentCommunicationId = null;
+        let currentCompany = null; // { cnpj, name, role }
+        let currentCommunicationId = null; // ID of the communication currently open in the chatbox
         let isInboxViewActive = false;
-        let notificationTimeoutId = null; // ID for the notification timer
 
-        // --- Helper Functions (generateCommId, getCommunicationById, findLatestCommunication, findLatestActiveCommunication, getOrCreateCommunication, getSelectedRadioValue, needsAttention) remain the same ---
-        function generateCommId() { /* ... */ }
-        function getCommunicationById(id) { /* ... */ }
-        function findLatestCommunication(cnpj) { /* ... */ }
-        function findLatestActiveCommunication(cnpj) { /* ... */ }
-        function getOrCreateCommunication(cnpj, forceNew = false) { /* ... */ }
-        function getSelectedRadioValue(name) { /* ... */ }
-        function needsAttention(comm) { /* ... */ }
-
-
-        // --- Notification Functions ---
-        function showNotification(message) {
-            const popup = document.getElementById('notificationPopup');
-            const popupText = document.getElementById('notificationPopupText');
-
-            // Clear previous timeout if it exists
-            if (notificationTimeoutId) {
-                clearTimeout(notificationTimeoutId);
-            }
-
-            popupText.textContent = message;
-            popup.classList.add('show'); // Use Bootstrap's fade show
-            popup.style.display = 'block'; // Ensure it's visible
-
-            // Set new timeout
-            notificationTimeoutId = setTimeout(() => {
-                hideNotification();
-            }, 5000); // 5 seconds
+        // --- Helper Functions ---
+        function generateCommId() {
+            communicationIdCounter++;
+            return `comm-${communicationIdCounter}`;
         }
 
-        function hideNotification() {
-            const popup = document.getElementById('notificationPopup');
-            popup.classList.remove('show');
-            // Use a short delay before setting display none to allow fade out
-            setTimeout(() => {
-                 // Check if it wasn't shown again in the meantime
-                 if (!popup.classList.contains('show')) {
-                    popup.style.display = 'none';
-                 }
-            }, 150); // Should match Bootstrap's fade duration
-
-            // Clear the timeout ID if it was hidden manually or automatically
-            if (notificationTimeoutId) {
-                clearTimeout(notificationTimeoutId);
-                notificationTimeoutId = null;
-            }
+        function getCommunicationById(id) {
+            return communications.find(c => c.id === id);
         }
 
+        // Finds the LATEST communication (any status) for a given CNPJ
+        function findLatestCommunication(cnpj) {
+            const companyComms = communications.filter(c => c.cnpj === cnpj).sort((a, b) => b.messages[0].timestamp - a.messages[0].timestamp); // Sort descending by creation time
+            return companyComms.length > 0 ? companyComms[0] : null;
+        }
+
+         // Finds the LATEST communication with a status OTHER than 'Encerrada'
+         function findLatestActiveCommunication(cnpj) {
+            const companyComms = communications
+                .filter(c => c.cnpj === cnpj && c.status !== 'Encerrada')
+                .sort((a, b) => b.messages[0].timestamp - a.messages[0].timestamp); // Sort descending
+            return companyComms.length > 0 ? companyComms[0] : null;
+         }
+
+        // Creates a NEW communication or finds the latest ACTIVE one
+        function getOrCreateCommunication(cnpj, forceNew = false) {
+            if (!forceNew) {
+                const activeComm = findLatestActiveCommunication(cnpj);
+                if (activeComm) {
+                    return activeComm; // Return existing active one
+                }
+            }
+            // If forceNew is true, or no active one exists, create a new one
+            const company = companies.find(c => c.cnpj === cnpj);
+            const newComm = {
+                id: generateCommId(), // Assign unique ID
+                cnpj,
+                subject: "Confia Paraná",
+                status: "Em análise",
+                messages: [{ sender: "Sistema", text: "Comunicação iniciada.", status: "Em análise", timestamp: new Date() }],
+                responsible: "AUDITOR",
+                auditorHasRated: false,
+                companyHasRated: false
+            };
+            communications.push(newComm);
+            if (!evaluations[cnpj]) { // Ensure eval object exists per CNPJ
+                 evaluations[cnpj] = { auditorRating: null, auditorFeedback: {}, companyRating: null, companyFeedbackText: '', auditorHasRated: false, companyHasRated: false };
+             }
+             // Reset eval status flags for the NEW communication on the CNPJ level (might need refinement for ID-based evals)
+             evaluations[cnpj].auditorHasRated = false;
+             evaluations[cnpj].companyHasRated = false;
+
+            return newComm;
+        }
+
+         function getSelectedRadioValue(name) {
+            const radios = document.getElementsByName(name);
+            for (let i = 0; i < radios.length; i++) { if (radios[i].checked) return radios[i].value; }
+            return null;
+        }
+
+        function needsAttention(comm) {
+             if (!comm || !comm.messages || comm.messages.length === 0 || comm.status === "Encerrada") return false;
+             const company = companies.find(c => c.cnpj === comm.cnpj);
+             if (!company) return false;
+             const lastMessage = comm.messages[comm.messages.length - 1];
+             // Needs attention if the last message is NOT from the current user AND comm is not closed
+             return comm.status !== "Encerrada" && (
+                    (currentRole === "AUDITOR" && lastMessage.sender !== "AUDITOR" && lastMessage.sender !== "Sistema") ||
+                    (currentRole === company.role && lastMessage.sender !== currentRole && lastMessage.sender !== "Sistema")
+             );
+        }
 
         // --- Core UI Functions ---
 
-        function switchRole(role) { /* ... remains the same, ensures panelButtonContainer visibility based on role ... */ }
+        function switchRole(role) {
+            currentRole = role;
+            document.getElementById("currentRole").textContent = role;
+            document.getElementById("chatBox").style.display = "none";
+            document.getElementById("communicationsPanel").style.display = "none";
+            isInboxViewActive = false;
+            document.getElementById("inboxBtn").classList.remove('active');
+            currentCompany = null;
+            currentCommunicationId = null;
+
+            // Toggle Panel button visibility
+            document.getElementById("panelButtonContainer").style.display = (role === 'AUDITOR') ? 'flex' : 'none';
+
+            populateCompanyList();
+            updateInboxStatus();
+        }
 
         function populateCompanyList() {
             const companyList = document.getElementById("companyList");
@@ -238,37 +310,39 @@
             }).filter(company => {
                 const latestComm = findLatestCommunication(company.cnpj);
                 const currentStatus = latestComm ? latestComm.status : "Sem comunicação";
+                // Apply status filter
                 const matchesStatus = statusFilter ? currentStatus === statusFilter : true;
+                // Apply CNPJ filter
                 const matchesCNPJ = cnpjFilter ? company.cnpj.toLowerCase().includes(cnpjFilter) : true;
+                // Apply Inbox filter
                 const matchesInbox = isInboxViewActive ? (latestComm && needsAttention(latestComm)) : true;
+
                 return matchesStatus && matchesCNPJ && matchesInbox;
             });
 
             displayCompanies.forEach(company => {
-                const latestComm = findLatestCommunication(company.cnpj);
-                const companyEval = evaluations[company.cnpj] || {};
+                const latestComm = findLatestCommunication(company.cnpj); // Find the very last one (active or closed)
+                const companyEval = evaluations[company.cnpj] || {}; // Get eval status
+
                 const row = document.createElement("tr");
                 let actionButtonHTML = '-';
 
-                // Determine if the current user CAN initiate (Auditor OR Class A Company)
-                const canInitiate = (currentRole === "AUDITOR" || (currentRole === company.role && company.classification === 'A'));
-
-                if (canInitiate) {
+                if (currentRole === "AUDITOR") {
                     if (!latestComm || latestComm.status === 'Encerrada') {
-                        // Can initiate, and no active comm exists -> Show "Iniciar"
-                        actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', null, true)">Iniciar Comunicação</button>`;
+                        // No comms or last one closed -> Auditor can initiate a NEW one
+                         actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', null, true)">Iniciar Comunicação</button>`;
                     } else {
-                        // Active comm exists -> Show "Abrir"
-                        actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+                         // Active comm exists -> Auditor can open it
+                         actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
                     }
-                } else if (currentRole === company.role) { // Non-Class A Company User
+                } else { // Company User
                     if (latestComm) {
                         if (latestComm.status !== 'Encerrada') {
-                            // Active comm exists -> Show "Abrir"
-                            actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+                             // Active comm -> Company can open it
+                             actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
                         } else if (!companyEval.companyHasRated) {
-                            // Closed comm AND not rated -> Show "Avaliar"
-                            actionButtonHTML = `<button class="btn btn-warning btn-sm" onclick="openEvaluation('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Avaliar (${latestComm.id})</button>`;
+                             // Closed comm AND not rated yet -> Company can evaluate
+                             actionButtonHTML = `<button class="btn btn-warning btn-sm" onclick="openEvaluation('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Avaliar (${latestComm.id})</button>`;
                         } else {
                             // Closed comm AND already rated
                             actionButtonHTML = `<span class="text-muted">Avaliado</span>`;
@@ -289,19 +363,202 @@
             });
         }
 
-        function updateInboxStatus() { /* ... remains the same ... */ }
-        function toggleInboxView() { /* ... remains the same ... */ }
-        function applyFilters() { /* ... remains the same ... */ }
+        function updateInboxStatus() {
+            let inboxCount = 0;
+            // Check ALL communications, not just latest per company
+            communications.forEach(comm => {
+                if (needsAttention(comm)) { inboxCount++; }
+            });
+
+            const inboxIcon = document.getElementById("inboxIcon");
+            const inboxCountSpan = document.getElementById("inboxCount");
+            if (inboxCount > 0) {
+                inboxIcon.classList.add("active");
+                inboxCountSpan.style.display = "inline";
+                inboxCountSpan.textContent = inboxCount;
+            } else {
+                inboxIcon.classList.remove("active");
+                inboxCountSpan.style.display = "none";
+            }
+        }
+
+        function toggleInboxView() {
+             isInboxViewActive = !isInboxViewActive;
+             document.getElementById("inboxBtn").classList.toggle('active', isInboxViewActive);
+             // Optionally clear other filters
+             // document.getElementById("statusFilter").value = "";
+             // document.getElementById("cnpjFilter").value = "";
+             populateCompanyList();
+        }
+
+        function applyFilters() {
+             isInboxViewActive = false;
+             document.getElementById("inboxBtn").classList.remove('active');
+             populateCompanyList();
+        }
 
         // --- Communications Panel (Auditor Only) ---
-        function toggleCommunicationsPanel() { /* ... remains the same ... */ }
-        function populateCommunicationsPanel() { /* ... remains the same ... */ }
-        function openChatFromPanel(communicationIdToOpen) { /* ... remains the same ... */ }
-        function openEvaluation(cnpj, name, role, communicationIdToOpen) { /* ... remains the same ... */ }
+        function toggleCommunicationsPanel() {
+            if (currentRole !== 'AUDITOR') return;
+            const panel = document.getElementById("communicationsPanel");
+            if (panel.style.display === "none") {
+                populateCommunicationsPanel(); // Populate/Repopulate with filters
+                panel.style.display = "block";
+                document.getElementById("chatBox").style.display = "none";
+            } else {
+                panel.style.display = "none";
+            }
+        }
+
+        function populateCommunicationsPanel() {
+             if (currentRole !== 'AUDITOR') return; // Double check access
+
+             const panelList = document.getElementById("communicationsPanelList");
+             panelList.innerHTML = "";
+             const cnpjFilterPanel = document.getElementById("panelCnpjFilter").value.toLowerCase();
+             const nameFilterPanel = document.getElementById("panelNameFilter").value.toLowerCase();
+
+             // Filter all communications based on panel inputs
+             const filteredComms = communications.filter(comm => {
+                 const company = companies.find(c => c.cnpj === comm.cnpj);
+                 if (!company) return false; // Safety check
+
+                 const matchesCnpj = cnpjFilterPanel ? comm.cnpj.toLowerCase().includes(cnpjFilterPanel) : true;
+                 const matchesName = nameFilterPanel ? company.name.toLowerCase().includes(nameFilterPanel) : true;
+                 return matchesCnpj && matchesName;
+             }).sort((a, b) => b.messages[0].timestamp - a.messages[0].timestamp); // Sort newest first
+
+
+             if (filteredComms.length === 0) {
+                panelList.innerHTML = '<tr><td colspan="6">Nenhuma comunicação encontrada com os filtros aplicados.</td></tr>';
+                return;
+             }
+
+             filteredComms.forEach(comm => {
+                const company = companies.find(c => c.cnpj === comm.cnpj);
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${comm.id}</td>
+                    <td>${comm.cnpj}</td>
+                    <td>${company.name}</td>
+                    <td>${comm.subject}</td>
+                    <td>${comm.status}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="openChatFromPanel('${comm.id}')">
+                            Abrir (${comm.id})
+                        </button>
+                    </td>
+                `;
+                panelList.appendChild(row);
+            });
+        }
+
+         // Renamed function parameter for clarity
+        function openChatFromPanel(communicationIdToOpen) {
+            const comm = getCommunicationById(communicationIdToOpen);
+            if (comm) {
+                const company = companies.find(c => c.cnpj === comm.cnpj);
+                 startChat(comm.cnpj, company.name, company.role, communicationIdToOpen); // Pass ID explicitly
+                document.getElementById("communicationsPanel").style.display = "none";
+            } else {
+                alert("Erro: Comunicação não encontrada.");
+            }
+        }
+
+         // Function for company clicking "Avaliar" button
+        function openEvaluation(cnpj, name, role, communicationIdToOpen) {
+            if (currentRole !== role) return; // Ensure it's the company clicking their own button
+            startChat(cnpj, name, role, communicationIdToOpen); // Open the specific closed chat
+            // startChat logic will handle showing the surveyCompany div because status is 'Encerrada'
+        }
 
 
         // --- Chat Box Functions ---
-        function startChat(cnpj, name, role, communicationIdToOpen = null, forceNew = false) { /* ... remains the same ... */ }
+        // Modified startChat to handle ID and forceNew flag
+        function startChat(cnpj, name, role, communicationIdToOpen = null, forceNew = false) {
+            let comm;
+            if (communicationIdToOpen) {
+                comm = getCommunicationById(communicationIdToOpen); // Get specific communication by ID
+                if (!comm) {
+                    alert("Erro: Comunicação não encontrada.");
+                    return;
+                }
+            } else {
+                 // If no ID provided, get/create based on forceNew flag
+                 comm = getOrCreateCommunication(cnpj, forceNew);
+            }
+
+            currentCompany = { cnpj, name, role };
+            currentCommunicationId = comm.id; // Store the ID of the open chat
+
+            document.getElementById("chatBox").style.display = "block";
+            document.getElementById("communicationsPanel").style.display = "none";
+            document.getElementById("companyName").textContent = name;
+            document.getElementById("companyCNPJ").textContent = cnpj;
+            document.getElementById("chatCommId").textContent = comm.id; // Display Comm ID
+            document.getElementById("subject").value = comm.subject;
+
+            // Reset UI elements
+            const messageInput = document.getElementById("messageInput");
+            const sendMessageBtn = document.getElementById("sendMessageBtn");
+            const closeChatBtn = document.getElementById("closeChatBtn");
+            const surveyAuditor = document.getElementById("surveyAuditor");
+            const surveyCompany = document.getElementById("surveyCompany");
+            const companyEvaluationDisplay = document.getElementById("companyEvaluationDisplay");
+
+            // Reset states
+            messageInput.disabled = false;
+            sendMessageBtn.disabled = false;
+            closeChatBtn.style.display = "none";
+            surveyAuditor.style.display = "none";
+            surveyCompany.style.display = "none";
+            companyEvaluationDisplay.style.display = "none";
+
+            // --- Configure UI based on communication status and user role ---
+            const companyEval = evaluations[cnpj] || {}; // Use CNPJ key for eval status for simplicity
+
+            if (comm.status === "Encerrada") {
+                messageInput.disabled = true;
+                sendMessageBtn.disabled = true;
+                closeChatBtn.style.display = "none";
+
+                // Company's turn to evaluate THIS specific comm (using CNPJ-level flag for now)
+                 if (currentRole === role && !companyEval.companyHasRated) {
+                    surveyCompany.style.display = "block";
+                    // Clear previous inputs
+                    document.getElementsByName('companyRating').forEach(radio => radio.checked = false);
+                    document.getElementById('companyFeedbackText').value = '';
+                }
+                 // Auditor viewing closed chat - show company eval if submitted for this CNPJ
+                 if (currentRole === 'AUDITOR') {
+                     if (companyEval.companyHasRated) {
+                         document.getElementById("companyRatingText").textContent = `Nota da Empresa: ${companyEval.companyRating || 'N/A'}/5`;
+                         document.getElementById("companyFeedbackDisplayText").textContent = companyEval.companyFeedbackText || '(Nenhum comentário adicional)';
+                         companyEvaluationDisplay.style.display = "block";
+                     } else {
+                        document.getElementById("companyRatingText").textContent = `Empresa ainda não avaliou esta comunicação.`;
+                         document.getElementById("companyFeedbackDisplayText").textContent = '';
+                         companyEvaluationDisplay.style.display = "block";
+                     }
+                     // Check if Auditor rated THIS specific communication (using CNPJ-level flag)
+                     if (companyEval.auditorHasRated) {
+                        // Optionally show a message "Resultado já enviado" instead of the form
+                        // surveyAuditor.style.display = "none"; // Ensure it's hidden if already rated
+                     }
+                 }
+
+            } else { // Communication is Active
+                messageInput.disabled = false;
+                sendMessageBtn.disabled = false;
+                // Only Auditor can close an active chat
+                if (currentRole === "AUDITOR") {
+                    closeChatBtn.style.display = "inline-block";
+                }
+            }
+
+            updateChatMessages(comm.messages);
+            updateInboxStatus();
+        }
 
         function sendMessage() {
             if (!currentCommunicationId) return;
@@ -321,30 +578,110 @@
                 status: comm.status,
                 timestamp: new Date()
             });
-            comm.subject = subject;
+            comm.subject = subject; // Update subject if changed
 
             messageInput.value = "";
             document.getElementById("attachment").value = "";
             updateChatMessages(comm.messages);
             updateInboxStatus();
-
-            // --- Show Notification ---
-            showNotification("Foi enviado um e-mail sobre a atualização do contato."); // Using "atualização" as discussed
-            // --- End Notification ---
         }
 
-        function updateChatMessages(messages) { /* ... remains the same ... */ }
-        function distributeTask(cnpj) { /* ... remains the same ... */ }
-        function closeChat() { /* ... remains the same, includes populateCompanyList() call ... */ }
-        function submitSurvey() { /* ... remains the same ... */ }
+        function updateChatMessages(messages) {
+            const chatMessages = document.getElementById("chatMessages");
+            chatMessages.innerHTML = "";
+            if (!messages) return;
+            messages.forEach(msg => {
+                const messageDiv = document.createElement("div");
+                messageDiv.className = "message";
+                messageDiv.innerHTML = `<div class="sender">${msg.sender}</div><div>${msg.text.replace(/\n/g, '<br>')}</div><div class="status">Status: ${msg.status} | ${msg.timestamp.toLocaleString()}</div>`;
+                chatMessages.appendChild(messageDiv);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function distributeTask(cnpj) {
+            if (currentRole !== "AUDITOR") { alert("Apenas o Auditor pode distribuir tarefas."); return; }
+            console.log(`Auditor ${currentRole} distribuiu/divulgou tarefa para ${cnpj}.`);
+            alert(`Tarefa/Divulgação iniciada para ${cnpj}.`);
+        }
+
+        function closeChat() {
+             if (currentRole !== 'AUDITOR' || !currentCommunicationId) return;
+             const comm = getCommunicationById(currentCommunicationId);
+             if (!comm || comm.status === "Encerrada") return;
+
+             comm.messages.push({ sender: "Sistema", text: `Comunicação ${comm.id} encerrada pelo Auditor (${currentRole}).`, status: "Encerrada", timestamp: new Date() });
+             comm.status = "Encerrada";
+
+             updateChatMessages(comm.messages);
+             updateInboxStatus();
+             populateCompanyList(); // IMPORTANT: Refresh company list to update button state
+
+             // Show Auditor's evaluation form IF they haven't rated for this CNPJ yet
+             const companyEval = evaluations[comm.cnpj] || {};
+             if (!companyEval.auditorHasRated) {
+                 document.getElementById("surveyAuditor").style.display = "block";
+                 // Clear previous selections
+                 document.getElementsByName('auditorRating').forEach(radio => radio.checked = false);
+                 document.getElementById('communicationWithAuditor').value = '';
+                 document.getElementById('programAdvantagesAuditor').value = '';
+                 document.getElementById('pendingResolutionAuditor').value = '';
+             }
+
+             document.getElementById("messageInput").disabled = true;
+             document.getElementById("sendMessageBtn").disabled = true;
+             document.getElementById("closeChatBtn").style.display = "none";
+        }
+
+        function submitSurvey() {
+             // Use currentCompany.cnpj as the key for evaluations object for simplicity
+             if (!currentCompany || !currentCompany.cnpj) return;
+             const cnpj = currentCompany.cnpj;
+
+             // Ensure eval object exists
+             if (!evaluations[cnpj]) {
+                 evaluations[cnpj] = { auditorRating: null, auditorFeedback: {}, companyRating: null, companyFeedbackText: '', auditorHasRated: false, companyHasRated: false };
+             }
+
+             if (currentRole === "AUDITOR") {
+                 const communicationWith = document.getElementById("communicationWithAuditor").value;
+                 const programAdvantages = document.getElementById("programAdvantagesAuditor").value;
+                 const pendingResolution = document.getElementById("pendingResolutionAuditor").value;
+                 const rating = getSelectedRadioValue("auditorRating");
+
+                 if (communicationWith && programAdvantages && pendingResolution && rating) {
+                     evaluations[cnpj].auditorRating = rating; // Store latest rating
+                     evaluations[cnpj].auditorFeedback = { communicationWith, programAdvantages, pendingResolution };
+                     evaluations[cnpj].auditorHasRated = true; // Mark as rated for this CNPJ interaction
+
+                     console.log(`Resultado do Contato (Auditor) para ${cnpj} (Comm: ${currentCommunicationId}) enviado: Nota ${rating}/5.`);
+                     document.getElementById("surveyAuditor").style.display = "none";
+                     // Optionally hide chat box after submitting
+                     // document.getElementById("chatBox").style.display = "none";
+                     // populateCompanyList(); // Refresh list if needed
+                 } else {
+                     alert("Por favor, preencha todos os campos do resultado do contato, incluindo a nota.");
+                 }
+             } else { // Company is submitting evaluation
+                 const rating = getSelectedRadioValue("companyRating");
+                 const feedbackText = document.getElementById("companyFeedbackText").value.trim();
+
+                 if (rating) {
+                     evaluations[cnpj].companyRating = rating; // Store latest rating
+                     evaluations[cnpj].companyFeedbackText = feedbackText;
+                     evaluations[cnpj].companyHasRated = true; // Mark as rated for this CNPJ interaction
+
+                     console.log(`Avaliação da Empresa (${currentRole} - ${cnpj}, Comm: ${currentCommunicationId}) enviada: Nota ${rating}/5.`);
+                     document.getElementById("surveyCompany").style.display = "none";
+                     document.getElementById("chatBox").style.display = "none"; // Hide chat after company evaluation
+                     populateCompanyList(); // Refresh list to potentially change button from Avaliar -> Avaliado
+                 } else {
+                      alert("Por favor, selecione uma nota de 1 a 5.");
+                 }
+             }
+        }
 
         // --- Initial Setup ---
-        // Add event listener for the manual dismiss button (alternative to data-bs-dismiss if needed, but let's rely on Bootstrap)
-        // const manualDismissBtn = document.querySelector('#notificationPopup .btn-close');
-        // if (manualDismissBtn) {
-        //     manualDismissBtn.addEventListener('click', hideNotification);
-        // }
-
         switchRole('AUDITOR'); // Set initial role and render UI
 
     </script>
