@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat System - Confia Paraná</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; position: relative; /* Needed for positioned notification */ }
+        .top-header { display: flex; justify-content: flex-end; padding: 10px 0; border-bottom: 1px solid #dee2e6; margin-bottom: 15px; }
+        .header { background-color: #007bff; color: white; padding: 15px; border-radius: 5px 5px 0 0; margin-top: 0; }
+        .company-table, .communications-panel-table { background-color: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+        .chat-box { background-color: white; border: 1px solid #007bff; border-radius: 5px; padding: 20px; margin-top: 20px; display: none; }
+        .chat-messages { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; background-color: #f1f1f1; border-radius: 5px; }
+        .message { margin-bottom: 10px; word-wrap: break-word; }
+        .message .sender { font-weight: bold; color: #007bff; }
+        .message .status { color: #888; font-size: 0.9em; }
+        .inbox-icon { color: #007bff; }
+        .inbox-icon.active { color: #28a745; }
+        .inbox-button.active { background-color: #ffc107; border-color: #ffc107; }
+        .message-input { resize: none; height: 100px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+        .survey-card { background-color: #e9ecef; border: 1px solid #007bff; border-radius: 5px; padding: 15px; margin-top: 15px; }
+        .role-label { font-weight: bold; color: #28a745; }
+        .inbox-count { background-color: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-left: 5px; }
+        .role-buttons .btn { margin-right: 5px; }
+        .message-input:disabled, #sendMessageBtn:disabled { background-color: #e9ecef; cursor: not-allowed; }
+        .rating-radios .form-check { display: inline-block; margin-right: 10px; }
+        #communicationsPanel { margin-top: 20px; border: 1px solid #ccc; padding: 15px; background-color: #f0f0f0; border-radius: 5px; }
+        .panel-filters { margin-bottom: 15px; }
+
+        /* Notification Style */
+        #notificationPopup {
+            position: fixed; /* Sticks relative to the viewport */
+            top: 20px;
+            right: 20px;
+            z-index: 1050; /* High z-index to be on top */
+            min-width: 300px; /* Adjust as needed */
+            display: none; /* Initially hidden */
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Popup Area -->
+    <div id="notificationPopup" class="alert alert-warning alert-dismissible fade" role="alert">
+        <span id="notificationPopupText"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="hideNotification()"></button>
+    </div>
+
+    <div class="container">
+        <!-- Top Header for Panel Button (Auditor Only) -->
+        <div class="top-header" id="panelButtonContainer" style="display: none;"> <!-- Initially hidden -->
+             <button id="communicationsPanelBtn" class="btn btn-secondary" onclick="toggleCommunicationsPanel()">Painel de Comunicações</button>
+        </div>
+
+        <!-- Role Switcher -->
+        <div class="mb-3 role-buttons">
+             <div class="btn-group" role="group">
+                 <button type="button" class="btn btn-warning" onclick="switchRole('AUDITOR')">Testar como AUDITOR</button>
+                 <button type="button" class="btn btn-warning" onclick="switchRole('CASA LIMPA')">CASA LIMPA</button>
+                 <button type="button" class="btn btn-warning" onclick="switchRole('ABS LOG')">ABS LOG</button> <!-- Class A -->
+                 <button type="button" class="btn btn-warning" onclick="switchRole('CAPIXABA')">CAPIXABA</button>
+             </div>
+             <span class="role-label ms-3">Usuário Atual: <span id="currentRole">AUDITOR</span></span>
+        </div>
+
+        <!-- Main Header -->
+        <div class="header d-flex justify-content-between align-items-center">
+            <h1>Consulta de Empresas - Confia Paraná</h1>
+            <div>
+                <button id="inboxBtn" class="btn btn-info inbox-button" onclick="toggleInboxView()">
+                    <i class="fas fa-envelope inbox-icon" id="inboxIcon"></i> Caixa de Entrada
+                    <span id="inboxCount" class="inbox-count" style="display: none;">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Communications Panel (Auditor Only, Initially Hidden) -->
+        <div id="communicationsPanel" style="display: none;">
+             <h3>Painel de Comunicações</h3>
+             {/* Panel Filters and Table HTML remains the same */}
+             <div class="panel-filters row g-3">
+                 <div class="col-md-5">
+                     <label for="panelCnpjFilter" class="form-label">Filtrar por CNPJ:</label>
+                     <input type="text" id="panelCnpjFilter" class="form-control form-control-sm" placeholder="Digite o CNPJ">
+                 </div>
+                 <div class="col-md-5">
+                     <label for="panelNameFilter" class="form-label">Filtrar por Razão Social:</label>
+                     <input type="text" id="panelNameFilter" class="form-control form-control-sm" placeholder="Digite parte do nome">
+                 </div>
+                 <div class="col-md-2 align-self-end">
+                     <button class="btn btn-primary btn-sm w-100" onclick="populateCommunicationsPanel()">Filtrar Painel</button>
+                 </div>
+             </div>
+             <div class="communications-panel-table">
+                 <table class="table table-sm table-striped">
+                     <thead><tr><th>ID</th><th>CNPJ</th><th>Empresa</th><th>Assunto</th><th>Status</th><th>Ações</th></tr></thead>
+                     <tbody id="communicationsPanelList"></tbody>
+                 </table>
+             </div>
+             <button class="btn btn-secondary btn-sm mt-2" onclick="toggleCommunicationsPanel()">Fechar Painel</button>
+        </div>
+
+        <!-- Main Filters -->
+        <div class="filters mt-3 d-flex flex-wrap gap-3">
+             {/* Filters HTML remains the same */}
+            <div>
+                <label for="statusFilter" class="form-label">Filtrar por Status Última Comunicação:</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="">Todos</option>
+                    <option value="Em análise">Em análise</option>
+                    <option value="Resolvida">Resolvida</option>
+                    <option value="Encerrada">Encerrada</option>
+                     <option value="Sem comunicação">Sem comunicação</option>
+                </select>
+            </div>
+            <div><label for="cnpjFilter" class="form-label">CNPJ:</label><input type="text" id="cnpjFilter" class="form-control" placeholder="Digite o CNPJ"></div>
+            <div class="align-self-end"><button class="btn btn-info" onclick="applyFilters()">Filtrar Empresas</button></div>
+        </div>
+
+        <!-- Company List -->
+        <div class="company-table mt-3">
+            <table class="table table-striped">
+                <thead><tr><th>CNPJ</th><th>Razão Social</th><th>Classificação</th><th>Divulgar</th><th>Ações</th></tr></thead>
+                <tbody id="companyList"></tbody>
+            </table>
+        </div>
+
+        <!-- Chat Box -->
+        <div class="chat-box" id="chatBox">
+             {/* Chat Box HTML remains largely the same */}
+             <h3>Comunicação <span id="chatCommId" class="badge bg-secondary"></span> com <span id="companyName"></span> (CNPJ: <span id="companyCNPJ"></span>)</h3>
+            <div class="row mb-3">
+                <div class="col-md-4"><label for="subject" class="form-label">Assunto:</label><select id="subject" class="form-select"><option value="Confia Paraná">Confia Paraná</option><option value="Consulta Fiscal">Consulta Fiscal</option><option value="Atualização de Dados">Atualização de Dados</option><option value="Outros">Outros</option></select></div>
+                <div class="col-md-4"><label for="attachment" class="form-label">Anexar Arquivo:</label><input type="file" id="attachment" class="form-control"></div>
+                <div class="col-md-4"><label for="auditor" class="form-label">Relacionamento com Auditor Fiscal:</label><select id="auditor" class="form-select"><option value="Auditor 1">Auditor 1 (Pré-selecionado)</option></select></div>
+            </div>
+            <div class="chat-messages" id="chatMessages"></div>
+            <div class="mb-3"><textarea id="messageInput" class="form-control message-input" placeholder="Escreva sua mensagem aqui..."></textarea></div>
+            <div class="d-flex gap-2 mb-3">
+                <button class="btn btn-primary" onclick="sendMessage()" id="sendMessageBtn">Enviar Mensagem</button>
+                <button class="btn btn-danger" onclick="closeChat()" id="closeChatBtn" style="display: none;">Fechar Comunicação</button>
+            </div>
+             {/* Evaluation Sections HTML remain the same */}
+            <div id="surveyAuditor" style="display: none;" class="survey-card">...</div>
+            <div id="surveyCompany" style="display: none;" class="survey-card">...</div>
+            <div id="companyEvaluationDisplay" style="display: none;" class="survey-card mt-3">...</div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+    <script>
+        // Mock data
+        const companies = [
+            { cnpj: "00.063.375", name: "CASA LIMPA INDUSTRIA E COMERCIO DE PRODUTOS DE LIMPEZA LTDA - ME", classification: "D", role: "CASA LIMPA" },
+            { cnpj: "00.092.446", name: "ABS LOG TRANSPORTES E ORGANIZACAO LOGISTICA LTDA", classification: "A", role: "ABS LOG" }, // Class A
+            { cnpj: "00.116.275", name: "CAPIXABA COMERCIO DE MATERIAIS DE CONSTRUCAO LTDA", classification: "D", role: "CAPIXABA" }
+        ];
+        let communications = [];
+        let evaluations = {};
+        let communicationIdCounter = 0;
+
+        // Current state
+        let currentRole = "AUDITOR";
+        let currentCompany = null;
+        let currentCommunicationId = null;
+        let isInboxViewActive = false;
+        let notificationTimeoutId = null; // ID for the notification timer
+
+        // --- Helper Functions (generateCommId, getCommunicationById, findLatestCommunication, findLatestActiveCommunication, getOrCreateCommunication, getSelectedRadioValue, needsAttention) remain the same ---
+        function generateCommId() { /* ... */ }
+        function getCommunicationById(id) { /* ... */ }
+        function findLatestCommunication(cnpj) { /* ... */ }
+        function findLatestActiveCommunication(cnpj) { /* ... */ }
+        function getOrCreateCommunication(cnpj, forceNew = false) { /* ... */ }
+        function getSelectedRadioValue(name) { /* ... */ }
+        function needsAttention(comm) { /* ... */ }
+
+
+        // --- Notification Functions ---
+        function showNotification(message) {
+            const popup = document.getElementById('notificationPopup');
+            const popupText = document.getElementById('notificationPopupText');
+
+            // Clear previous timeout if it exists
+            if (notificationTimeoutId) {
+                clearTimeout(notificationTimeoutId);
+            }
+
+            popupText.textContent = message;
+            popup.classList.add('show'); // Use Bootstrap's fade show
+            popup.style.display = 'block'; // Ensure it's visible
+
+            // Set new timeout
+            notificationTimeoutId = setTimeout(() => {
+                hideNotification();
+            }, 5000); // 5 seconds
+        }
+
+        function hideNotification() {
+            const popup = document.getElementById('notificationPopup');
+            popup.classList.remove('show');
+            // Use a short delay before setting display none to allow fade out
+            setTimeout(() => {
+                 // Check if it wasn't shown again in the meantime
+                 if (!popup.classList.contains('show')) {
+                    popup.style.display = 'none';
+                 }
+            }, 150); // Should match Bootstrap's fade duration
+
+            // Clear the timeout ID if it was hidden manually or automatically
+            if (notificationTimeoutId) {
+                clearTimeout(notificationTimeoutId);
+                notificationTimeoutId = null;
+            }
+        }
+
+
+        // --- Core UI Functions ---
+
+        function switchRole(role) { /* ... remains the same, ensures panelButtonContainer visibility based on role ... */ }
+
+        function populateCompanyList() {
+            const companyList = document.getElementById("companyList");
+            const statusFilter = document.getElementById("statusFilter").value;
+            const cnpjFilter = document.getElementById("cnpjFilter").value.toLowerCase();
+            companyList.innerHTML = "";
+
+            let displayCompanies = companies.filter(company => {
+                if (currentRole !== "AUDITOR") return company.role === currentRole;
+                return true;
+            }).filter(company => {
+                const latestComm = findLatestCommunication(company.cnpj);
+                const currentStatus = latestComm ? latestComm.status : "Sem comunicação";
+                const matchesStatus = statusFilter ? currentStatus === statusFilter : true;
+                const matchesCNPJ = cnpjFilter ? company.cnpj.toLowerCase().includes(cnpjFilter) : true;
+                const matchesInbox = isInboxViewActive ? (latestComm && needsAttention(latestComm)) : true;
+                return matchesStatus && matchesCNPJ && matchesInbox;
+            });
+
+            displayCompanies.forEach(company => {
+                const latestComm = findLatestCommunication(company.cnpj);
+                const companyEval = evaluations[company.cnpj] || {};
+                const row = document.createElement("tr");
+                let actionButtonHTML = '-';
+
+                // Determine if the current user CAN initiate (Auditor OR Class A Company)
+                const canInitiate = (currentRole === "AUDITOR" || (currentRole === company.role && company.classification === 'A'));
+
+                if (canInitiate) {
+                    if (!latestComm || latestComm.status === 'Encerrada') {
+                        // Can initiate, and no active comm exists -> Show "Iniciar"
+                        actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', null, true)">Iniciar Comunicação</button>`;
+                    } else {
+                        // Active comm exists -> Show "Abrir"
+                        actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+                    }
+                } else if (currentRole === company.role) { // Non-Class A Company User
+                    if (latestComm) {
+                        if (latestComm.status !== 'Encerrada') {
+                            // Active comm exists -> Show "Abrir"
+                            actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+                        } else if (!companyEval.companyHasRated) {
+                            // Closed comm AND not rated -> Show "Avaliar"
+                            actionButtonHTML = `<button class="btn btn-warning btn-sm" onclick="openEvaluation('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Avaliar (${latestComm.id})</button>`;
+                        } else {
+                            // Closed comm AND already rated
+                            actionButtonHTML = `<span class="text-muted">Avaliado</span>`;
+                        }
+                    } // Else (no communication ever) -> shows '-'
+                }
+
+                const divulgarButton = currentRole === 'AUDITOR' ? `<button class="btn btn-success btn-sm" onclick="distributeTask('${company.cnpj}')">Divulgar</button>` : '-';
+
+                row.innerHTML = `
+                    <td>${company.cnpj}</td>
+                    <td>${company.name}</td>
+                    <td>${company.classification}</td>
+                    <td>${divulgarButton}</td>
+                    <td>${actionButtonHTML}</td>
+                `;
+                companyList.appendChild(row);
+            });
+        }
+
+        function updateInboxStatus() { /* ... remains the same ... */ }
+        function toggleInboxView() { /* ... remains the same ... */ }
+        function applyFilters() { /* ... remains the same ... */ }
+
+        // --- Communications Panel (Auditor Only) ---
+        function toggleCommunicationsPanel() { /* ... remains the same ... */ }
+        function populateCommunicationsPanel() { /* ... remains the same ... */ }
+        function openChatFromPanel(communicationIdToOpen) { /* ... remains the same ... */ }
+        function openEvaluation(cnpj, name, role, communicationIdToOpen) { /* ... remains the same ... */ }
+
+
+        // --- Chat Box Functions ---
+        function startChat(cnpj, name, role, communicationIdToOpen = null, forceNew = false) { /* ... remains the same ... */ }
+
+        function sendMessage() {
+            if (!currentCommunicationId) return;
+            const comm = getCommunicationById(currentCommunicationId);
+            if (!comm || comm.status === "Encerrada") return;
+
+            const messageInput = document.getElementById("messageInput");
+            const attachment = document.getElementById("attachment").files[0];
+            const subject = document.getElementById("subject").value;
+            const messageText = messageInput.value.trim();
+
+            if (!messageText) return;
+
+            comm.messages.push({
+                sender: currentRole,
+                text: `Assunto: ${subject}\nMensagem: ${messageText}${attachment ? "\nAnexo: " + attachment.name : ""}`,
+                status: comm.status,
+                timestamp: new Date()
+            });
+            comm.subject = subject;
+
+            messageInput.value = "";
+            document.getElementById("attachment").value = "";
+            updateChatMessages(comm.messages);
+            updateInboxStatus();
+
+            // --- Show Notification ---
+            showNotification("Foi enviado um e-mail sobre a atualização do contato."); // Using "atualização" as discussed
+            // --- End Notification ---
+        }
+
+        function updateChatMessages(messages) { /* ... remains the same ... */ }
+        function distributeTask(cnpj) { /* ... remains the same ... */ }
+        function closeChat() { /* ... remains the same, includes populateCompanyList() call ... */ }
+        function submitSurvey() { /* ... remains the same ... */ }
+
+        // --- Initial Setup ---
+        // Add event listener for the manual dismiss button (alternative to data-bs-dismiss if needed, but let's rely on Bootstrap)
+        // const manualDismissBtn = document.querySelector('#notificationPopup .btn-close');
+        // if (manualDismissBtn) {
+        //     manualDismissBtn.addEventListener('click', hideNotification);
+        // }
+
+        switchRole('AUDITOR'); // Set initial role and render UI
+
+    </script>
+</body>
+</html>
