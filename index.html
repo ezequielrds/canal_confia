@@ -20,10 +20,10 @@
     <!-- Role Switcher -->
     <div class="mb-3 role-buttons">
       <div class="btn-group" role="group">
-        <button type="button" class="btn btn-warning" onclick="switchRole('AUDITOR')">Testar como AUDITOR</button>
-        <button type="button" class="btn btn-warning" onclick="switchRole('CASA LIMPA')">CASA LIMPA</button>
-        <button type="button" class="btn btn-warning" onclick="switchRole('ABS LOG')">ABS LOG</button>
-        <button type="button" class="btn btn-warning" onclick="switchRole('CAPIXABA')">CAPIXABA</button>
+        <button type="button" class="btn btn-primary" onclick="switchRole('AUDITOR')">Testar como AUDITOR</button>
+        <button type="button" class="btn btn-warning" onclick="switchRole('JOSE_CONTADOR')">José (Contador)</button>
+        <button type="button" class="btn btn-warning" onclick="switchRole('JOAO_SOCIO')">João (sócio)</button>
+        <button type="button" class="btn btn-warning" onclick="switchRole('MARIA_SOCIA')">Maria (sócia)</button>
       </div>
       <span class="role-label ms-3">Usuário Atual: <span id="currentRole">AUDITOR</span></span>
     </div>
@@ -73,7 +73,7 @@
           <tbody id="communicationsPanelList"></tbody>
         </table>
       </div>
-      <button class="btn btn-secondary btn-sm mt-2" onclick="toggleCommunicationsPanel()">Fechar Painel</button>
+      <button class="btn btn-secondary btn-sm mt-2" onclick="returnToCompanyList()">Voltar para relação de empresas</button>
     </div>
 <div id="consultaEmpresasContainer">
 <!-- Main Filters -->
@@ -105,7 +105,6 @@
 <th>CNPJ</th>
 <th>Razão Social</th>
 <th>Classificação</th>
-<th>Divulgar</th>
 <th>Ações</th>
   </tr>
 </thead>
@@ -145,6 +144,7 @@
       <div class="d-flex gap-2 mb-3">
         <button class="btn btn-primary" onclick="sendMessage()" id="sendMessageBtn">Enviar Mensagem</button>
         <button class="btn btn-danger" onclick="closeChat()" id="closeChatBtn" style="display: none;">Fechar Comunicação</button>
+        <button class="btn btn-secondary" onclick="returnToCompanyList()" id="backToCompaniesBtn">Voltar para relação de empresas</button>
       </div>
       <!-- Auditor Evaluation -->
       <div id="surveyAuditor" style="display: none;" class="survey-card">

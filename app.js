@@ -1,9 +1,21 @@
 // Mock data
 const companies = [
-    { cnpj: "00.063.375", name: "CASA LIMPA INDUSTRIA E COMERCIO DE PRODUTOS DE LIMPEZA LTDA - ME", classification: "D", role: "CASA LIMPA" },
-    { cnpj: "00.092.446", name: "ABS LOG TRANSPORTES E ORGANIZACAO LOGISTICA LTDA", classification: "A", role: "ABS LOG" },
-    { cnpj: "00.116.275", name: "CAPIXABA COMERCIO DE MATERIAIS DE CONSTRUCAO LTDA", classification: "D", role: "CAPIXABA" }
+    { cnpj: "00.063.375", name: "CASA LIMPA INDUSTRIA E COMERCIO DE PRODUTOS DE LIMPEZA LTDA - ME", classification: "D", 
+      accessibleBy: ["AUDITOR", "JOSE_CONTADOR", "JOAO_SOCIO"] },
+    { cnpj: "00.092.446", name: "ABS LOG TRANSPORTES E ORGANIZACAO LOGISTICA LTDA", classification: "A", 
+      accessibleBy: ["AUDITOR", "JOSE_CONTADOR", "MARIA_SOCIA"] },
+    { cnpj: "00.116.275", name: "CAPIXABA COMERCIO DE MATERIAIS DE CONSTRUCAO LTDA", classification: "D", 
+      accessibleBy: ["AUDITOR", "MARIA_SOCIA"] }
   ];
+
+  // User roles and display names
+  const userRoles = {
+    "AUDITOR": "AUDITOR",
+    "JOSE_CONTADOR": "José (Contador)",
+    "JOAO_SOCIO": "João (sócio)",
+    "MARIA_SOCIA": "Maria (sócia)"
+  };
+  
   let communications = []; // Array to hold all communication threads
   let evaluations = {}; // Avaliações por CNPJ: { cnpj: { auditorRating, auditorFeedback, companyRating, companyFeedbackText, auditorHasRated, companyHasRated } }
   let communicationIdCounter = 0; // Simple ID generator
@@ -80,23 +92,40 @@ const companies = [
     return null;
   }
 
+  // Fix for needsAttention function to handle access to closed communications
   function needsAttention(comm) {
-    if (!comm || !comm.messages || comm.messages.length === 0 || comm.status === "Encerrada") return false;
+    if (!comm || !comm.messages || comm.messages.length === 0) return false;
     const company = companies.find(c => c.cnpj === comm.cnpj);
     if (!company) return false;
-    const lastMessage = comm.messages[comm.messages.length - 1];
-    return comm.status !== "Encerrada" && (
-      (currentRole === "AUDITOR" && lastMessage.sender !== "AUDITOR" && lastMessage.sender !== "Sistema") ||
-      (currentRole === company.role && lastMessage.sender !== currentRole && lastMessage.sender !== "Sistema")
-    );
+    
+    // For inbox counter and highlighting, only count unread messages
+    if (isInboxViewActive === false) {
+      // For notification badge counting
+      const lastMessage = comm.messages[comm.messages.length - 1];
+      if (comm.status === "Encerrada") return false;
+      
+      // For auditor, message needs attention if last sender is not auditor or system
+      if (currentRole === "AUDITOR") {
+        return lastMessage.sender !== "AUDITOR" && lastMessage.sender !== "Sistema";
+      }
+      
+      // For company users, message needs attention if not from current role or system
+      if (company.accessibleBy.includes(currentRole)) {
+        return lastMessage.sender !== currentRole && lastMessage.sender !== "Sistema";
+      }
+    }
+    
+    // Always allow access to accessible companies' communications
+    return company.accessibleBy.includes(currentRole);
   }
 
   // --- Core UI Functions ---
   function switchRole(role) {
     currentRole = role;
-    document.getElementById("currentRole").textContent = role;
+    document.getElementById("currentRole").textContent = userRoles[role];
     document.getElementById("chatBox").style.display = "none";
     document.getElementById("communicationsPanel").style.display = "none";
+    document.getElementById("consultaEmpresasContainer").style.display = "block";
     isInboxViewActive = false;
     document.getElementById("inboxBtn").classList.remove('active');
     currentCompany = null;
@@ -113,15 +142,14 @@ const companies = [
     companyList.innerHTML = "";
 
     let displayCompanies = companies.filter(company => {
-      if (currentRole !== "AUDITOR") return company.role === currentRole;
-      return true;
+      // Only show companies accessible by the current role
+      return company.accessibleBy.includes(currentRole);
     }).filter(company => {
       const latestComm = findLatestCommunication(company.cnpj);
       const currentStatus = latestComm ? latestComm.status : "Sem comunicação";
       const matchesStatus = statusFilter ? currentStatus === statusFilter : true;
       const matchesCNPJ = cnpjFilter ? company.cnpj.toLowerCase().includes(cnpjFilter) : true;
-      const matchesInbox = isInboxViewActive ? (latestComm && needsAttention(latestComm)) : true;
-      return matchesStatus && matchesCNPJ && matchesInbox;
+      return matchesStatus && matchesCNPJ;
     });
 
     displayCompanies.forEach(company => {
@@ -132,36 +160,33 @@ const companies = [
 
       if (currentRole === "AUDITOR") {
         if (!latestComm || latestComm.status === 'Encerrada') {
-          actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', null, true)">Iniciar Comunicação</button>`;
+          actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', 'AUDITOR', null, true)">Iniciar Comunicação</button>`;
         } else {
-          actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+          actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', 'AUDITOR', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
         }
       } else { // Usuário Empresa
         if (latestComm) {
           if (latestComm.status !== 'Encerrada') {
-            actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
+            actionButtonHTML = `<button class="btn btn-info btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${currentRole}', '${latestComm.id}')">Abrir Comunicação (${latestComm.id})</button>`;
           } else if (!companyEval.companyHasRated) {
-            actionButtonHTML = `<button class="btn btn-warning btn-sm" onclick="openEvaluation('${company.cnpj}', '${company.name}', '${company.role}', '${latestComm.id}')">Avaliar (${latestComm.id})</button>`;
+            actionButtonHTML = `<button class="btn btn-warning btn-sm" onclick="openEvaluation('${company.cnpj}', '${company.name}', '${currentRole}', '${latestComm.id}')">Avaliar (${latestComm.id})</button>`;
           } else {
             actionButtonHTML = `<span class="text-muted">Avaliado</span>`;
           }
         } else {
           // Se não houver comunicação e a empresa for de classificação "A", permite iniciar comunicação
           if (company.classification === "A") {
-            actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${company.role}', null, true)">Iniciar Comunicação</button>`;
+            actionButtonHTML = `<button class="btn btn-primary btn-sm" onclick="startChat('${company.cnpj}', '${company.name}', '${currentRole}', null, true)">Iniciar Comunicação</button>`;
           } else {
             actionButtonHTML = '-';
           }
         }
       }
 
-      const divulgarButton = currentRole === 'AUDITOR' ? `<button class="btn btn-success btn-sm" onclick="distributeTask('${company.cnpj}')">Divulgar</button>` : '-';
-
       row.innerHTML = `
         <td>${company.cnpj}</td>
         <td>${company.name}</td>
         <td>${company.classification}</td>
-        <td>${divulgarButton}</td>
         <td>${actionButtonHTML}</td>
       `;
       companyList.appendChild(row);
@@ -186,9 +211,21 @@ const companies = [
   }
 
   function toggleInboxView() {
-    isInboxViewActive = !isInboxViewActive;
-    document.getElementById("inboxBtn").classList.toggle('active', isInboxViewActive);
-    populateCompanyList();
+    isInboxViewActive = true;
+    document.getElementById("inboxBtn").classList.add('active');
+    document.getElementById("consultaEmpresasContainer").style.display = "none";
+    document.getElementById("chatBox").style.display = "none";
+    document.getElementById("communicationsPanel").style.display = "block";
+    populateCommunicationsPanel();
+  }
+
+  function returnToCompanyList() {
+    document.getElementById("chatBox").style.display = "none";
+    document.getElementById("communicationsPanel").style.display = "none";
+    document.getElementById("consultaEmpresasContainer").style.display = "block";
+    isInboxViewActive = false;
+    document.getElementById("inboxBtn").classList.remove('active');
+    document.getElementById("panelButtonContainer").style.display = (currentRole === 'AUDITOR') ? 'flex' : 'none';
   }
 
   function applyFilters() {
@@ -197,43 +234,61 @@ const companies = [
     populateCompanyList();
   }
 
-  // --- Communications Panel (Auditor Only) ---
+  // --- Communications Panel ---
   function toggleCommunicationsPanel() {
-if (currentRole !== 'AUDITOR') return;
-const panel = document.getElementById("communicationsPanel");
-const consultaContainer = document.getElementById("consultaEmpresasContainer");
-const inboxContainer = document.getElementById("inboxContainer");
-const panelButton = document.getElementById("communicationsPanelBtn");
-if (panel.style.display === "none") {
-  populateCommunicationsPanel();
-  panel.style.display = "block";
-  if (consultaContainer) consultaContainer.style.display = "none";
-  if (inboxContainer) inboxContainer.style.display = "none";
-  document.getElementById("chatBox").style.display = "none";
-  // Altera o texto e a cor do botão para azul (btn-primary)
-  panelButton.textContent = "Voltar para relação de empresas";
-  panelButton.className = "btn btn-primary";
-} else {
-  panel.style.display = "none";
-  if (consultaContainer) consultaContainer.style.display = "block";
-  if (inboxContainer) inboxContainer.style.display = "block";
-  // Restaura o texto original e a classe original (btn-secondary)
-  panelButton.textContent = "Painel de Comunicações";
-  panelButton.className = "btn btn-secondary";
-}
-}
+    if (currentRole !== 'AUDITOR') return;
+    const panel = document.getElementById("communicationsPanel");
+    const consultaContainer = document.getElementById("consultaEmpresasContainer");
+    const inboxContainer = document.getElementById("inboxContainer");
+    const panelButton = document.getElementById("communicationsPanelBtn");
+    if (panel.style.display === "none") {
+      populateCommunicationsPanel();
+      panel.style.display = "block";
+      if (consultaContainer) consultaContainer.style.display = "none";
+      if (inboxContainer) inboxContainer.style.display = "block";
+      document.getElementById("chatBox").style.display = "none";
+      // Altera o texto e a cor do botão para azul (btn-primary)
+      panelButton.textContent = "Voltar para relação de empresas";
+      panelButton.className = "btn btn-primary";
+    } else {
+      panel.style.display = "none";
+      if (consultaContainer) consultaContainer.style.display = "block";
+      if (inboxContainer) inboxContainer.style.display = "block";
+      // Restaura o texto original e a classe original (btn-secondary)
+      panelButton.textContent = "Painel de Comunicações";
+      panelButton.className = "btn btn-secondary";
+    }
+  }
 
   function populateCommunicationsPanel() {
-    if (currentRole !== 'AUDITOR') return;
     const panelList = document.getElementById("communicationsPanelList");
     panelList.innerHTML = "";
     const cnpjFilterPanel = document.getElementById("panelCnpjFilter").value.toLowerCase();
     const nameFilterPanel = document.getElementById("panelNameFilter").value.toLowerCase();
+    
+    // Filter communications based on current role and access
     const filteredComms = communications.filter(comm => {
       const company = companies.find(c => c.cnpj === comm.cnpj);
       if (!company) return false;
+      
+      // Check if user has access to this company
+      if (!company.accessibleBy.includes(currentRole)) return false;
+      
+      // Apply filters
       const matchesCnpj = cnpjFilterPanel ? comm.cnpj.toLowerCase().includes(cnpjFilterPanel) : true;
       const matchesName = nameFilterPanel ? company.name.toLowerCase().includes(nameFilterPanel) : true;
+      
+      // If inbox view is active, use needsAttention for unread messages
+      if (isInboxViewActive && currentRole === "AUDITOR") {
+        // For auditor, check if it needs attention
+        const lastMessage = comm.messages[comm.messages.length - 1];
+        return matchesCnpj && matchesName && 
+               (lastMessage.sender !== "AUDITOR" && lastMessage.sender !== "Sistema" && comm.status !== "Encerrada");
+      } else if (isInboxViewActive) {
+        // For non-auditors, show all accessible communications
+        return matchesCnpj && matchesName;
+      }
+      
       return matchesCnpj && matchesName;
     }).sort((a, b) => b.messages[0].timestamp - a.messages[0].timestamp);
 
@@ -265,16 +320,10 @@ if (panel.style.display === "none") {
     const comm = getCommunicationById(communicationIdToOpen);
     if (comm) {
       const company = companies.find(c => c.cnpj === comm.cnpj);
-      startChat(comm.cnpj, company.name, company.role, communicationIdToOpen);
-      document.getElementById("communicationsPanel").style.display = "none";
+      startChat(comm.cnpj, company.name, currentRole, communicationIdToOpen);
     } else {
       alert("Erro: Comunicação não encontrada.");
     }
-  }
-
-  function openEvaluation(cnpj, name, role, communicationIdToOpen) {
-    if (currentRole !== role) return;
-    startChat(cnpj, name, role, communicationIdToOpen);
   }
 
   // --- Chat Box Functions ---
@@ -292,18 +341,17 @@ if (panel.style.display === "none") {
     currentCompany = { cnpj, name, role };
     currentCommunicationId = comm.id;
 
-    // Se for uma nova comunicação iniciada (forceNew=true), mostra o popup
-    if (!communicationIdToOpen && forceNew) {
-      showEmailSentPopup();
-    }
-
-    document.getElementById("chatBox").style.display = "block";
+    // Hide company list and show chat box
+    document.getElementById("consultaEmpresasContainer").style.display = "none";
     document.getElementById("communicationsPanel").style.display = "none";
+    document.getElementById("chatBox").style.display = "block";
+
     document.getElementById("companyName").textContent = name;
     document.getElementById("companyCNPJ").textContent = cnpj;
     document.getElementById("chatCommId").textContent = comm.id;
     document.getElementById("subject").value = comm.subject;
 
+    // ...existing code for setting up the chat...
     const messageInput = document.getElementById("messageInput");
     const sendMessageBtn = document.getElementById("sendMessageBtn");
     const closeChatBtn = document.getElementById("closeChatBtn");
@@ -325,7 +373,7 @@ if (panel.style.display === "none") {
       sendMessageBtn.disabled = true;
       closeChatBtn.style.display = "none";
 
-      if (currentRole === role && !companyEval.companyHasRated) {
+      if (currentRole !== 'AUDITOR' && !companyEval.companyHasRated) {
         surveyCompany.style.display = "block";
         document.getElementsByName('companyRating').forEach(radio => radio.checked = false);
         document.getElementById('companyFeedbackText').value = '';
@@ -362,8 +410,16 @@ if (panel.style.display === "none") {
     const subject = document.getElementById("subject").value;
     const messageText = messageInput.value.trim();
     if (!messageText) return;
+    
+    // Get the display name for the current role
+    const senderDisplayName = userRoles[currentRole];
+    
+    // Check if this is the first non-system message in the communication
+    const isFirstUserMessage = comm.messages.length === 1 && comm.messages[0].sender === "Sistema";
+    
     comm.messages.push({
       sender: currentRole,
+      senderName: senderDisplayName,
       text: `Assunto: ${subject}\nMensagem: ${messageText}${attachment ? "\nAnexo: " + attachment.name : ""}`,
       status: comm.status,
       timestamp: new Date()
@@ -371,6 +427,12 @@ if (panel.style.display === "none") {
     comm.subject = subject;
     messageInput.value = "";
     document.getElementById("attachment").value = "";
+    
+    // Show the email popup when sending the first message
+    if (isFirstUserMessage) {
+      showEmailSentPopup();
+    }
+    
     updateChatMessages(comm.messages);
     updateInboxStatus();
   }
@@ -382,7 +444,11 @@ if (panel.style.display === "none") {
     messages.forEach(msg => {
       const messageDiv = document.createElement("div");
       messageDiv.className = "message";
-      messageDiv.innerHTML = `<div class="sender">${msg.sender}</div><div>${msg.text.replace(/\n/g, '<br>')}</div><div class="status">Status: ${msg.status} | ${msg.timestamp.toLocaleString()}</div>`;
+      
+      // Use the sender's display name if available, otherwise use the role
+      const displayName = msg.senderName || userRoles[msg.sender] || msg.sender;
+      
+      messageDiv.innerHTML = `<div class="sender">${displayName}</div><div>${msg.text.replace(/\n/g, '<br>')}</div><div class="status">Status: ${msg.status} | ${msg.timestamp.toLocaleString()}</div>`;
       chatMessages.appendChild(messageDiv);
     });
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -484,3 +550,42 @@ if (panel.style.display === "none") {
 
   // --- Initial Setup ---
   switchRole('AUDITOR');
+
+  function openEvaluation(cnpj, name, role, communicationIdToOpen) {
+    if (!communicationIdToOpen) return;
+    
+    // Get the communication details
+    const comm = getCommunicationById(communicationIdToOpen);
+    if (!comm) {
+      alert("Erro: Comunicação não encontrada.");
+      return;
+    }
+    
+    // Set current state
+    currentCompany = { cnpj, name, role };
+    currentCommunicationId = communicationIdToOpen;
+    
+    // Hide company list and show chat box
+    document.getElementById("consultaEmpresasContainer").style.display = "none";
+    document.getElementById("communicationsPanel").style.display = "none";
+    document.getElementById("chatBox").style.display = "block";
+    
+    // Update chat header
+    document.getElementById("companyName").textContent = name;
+    document.getElementById("companyCNPJ").textContent = cnpj;
+    document.getElementById("chatCommId").textContent = comm.id;
+    document.getElementById("subject").value = comm.subject;
+    
+    // Disable messaging since communication is closed
+    document.getElementById("messageInput").disabled = true;
+    document.getElementById("sendMessageBtn").disabled = true;
+    document.getElementById("closeChatBtn").style.display = "none";
+    
+    // Show evaluation form
+    document.getElementById("surveyCompany").style.display = "block";
+    document.getElementsByName('companyRating').forEach(radio => radio.checked = false);
+    document.getElementById('companyFeedbackText').value = '';
+    
+    // Update messages
+    updateChatMessages(comm.messages);
+  }
