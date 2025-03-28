@@ -12,9 +12,14 @@
 </head>
 <body>
   <div class="container">
-    <!-- Top Header for Panel Button (Auditor Only) -->
-    <div class="top-header" id="panelButtonContainer" style="display: none;"> <!-- Initially hidden -->
-      <button id="communicationsPanelBtn" class="btn btn-secondary" onclick="toggleCommunicationsPanel()">Painel de Comunicações</button>
+    <!-- Top Header for Panel and Clear Data Buttons -->
+    <div class="top-header d-flex justify-content-end gap-2 mb-2">
+      <div id="panelButtonContainer" style="display: none;"> <!-- Initially hidden -->
+        <button id="communicationsPanelBtn" class="btn btn-secondary" onclick="toggleCommunicationsPanel()">Painel de Comunicações</button>
+      </div>
+      <div>
+        <button id="clearDataBtn" class="btn btn-danger" onclick="clearAllData()">Limpar Dados</button>
+      </div>
     </div>
 
     <!-- Role Switcher -->
