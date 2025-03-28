@@ -1,0 +1,21 @@
+body { font-family: Arial, sans-serif; background-color: #f8f9fa; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .top-header { display: flex; justify-content: flex-end; padding: 10px 0; border-bottom: 1px solid #dee2e6; margin-bottom: 15px; }
+    .header { background-color: #007bff; color: white; padding: 15px; border-radius: 5px 5px 0 0; margin-top: 0; }
+    .company-table, .communications-panel-table { background-color: white; border-radius: 5px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .chat-box { background-color: white; border: 1px solid #007bff; border-radius: 5px; padding: 20px; margin-top: 20px; display: none; }
+    .chat-messages { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 20px; background-color: #f1f1f1; border-radius: 5px; }
+    .message { margin-bottom: 10px; word-wrap: break-word; }
+    .message .sender { font-weight: bold; color: #007bff; }
+    .message .status { color: #888; font-size: 0.9em; }
+    .inbox-icon { color: #007bff; }
+    .inbox-icon.active { color: #28a745; }
+    .inbox-button.active { background-color: #ffc107; border-color: #ffc107; }
+    .message-input { resize: none; height: 100px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+    .survey-card { background-color: #e9ecef; border: 1px solid #007bff; border-radius: 5px; padding: 15px; margin-top: 15px; }
+    .role-label { font-weight: bold; color: #28a745; }
+    .inbox-count { background-color: #dc3545; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-left: 5px; }
+    .role-buttons .btn { margin-right: 5px; }
+    .message-input:disabled, #sendMessageBtn:disabled { background-color: #e9ecef; cursor: not-allowed; }
+    #communicationsPanel { margin-top: 20px; border: 1px solid #ccc; padding: 15px; background-color: #f0f0f0; border-radius: 5px; }
+    .panel-filters { margin-bottom: 15px; }
